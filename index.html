@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题库查询系统</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+
+<body>
+    <!-- 全局提示条 -->
+    <div class="alert-bar" id="alertBar"></div>
+
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <h1>题库查询系统</h1>
+                <div class="header-meta">
+                    <span class="version">v1.4.0</span>
+                    <span class="current-time" id="currentTime"></span>
+                    <span class="parse-status" id="parseStatus">题库未解析</span>
+                </div>
+            </div>
+            <div class="header-controls">
+                <div class="toggle-container">
+                    <span class="toggle-label">本地</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="modeToggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="toggle-label">在线</span>
+                </div>
+                <button class="refresh-button" id="refreshButton" title="刷新数据">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="content">
+        <div class="search-container">
+            <!-- 公告栏 -->
+            <div class="notice-tab active" id="noticeTab">
+                <div class="notice-content">
+                    <h3>系统操作指南</h3>
+                    <ol>
+                        <li>选择查询方式：ID查询、题目查询或选项查询</li>
+                        <li>在输入框中输入查询内容</li>
+                        <li>点击查询按钮获取结果</li>
+                        <li>使用右上角开关切换本地/在线模式</li>
+                        <li>在线模式会自动从服务器获取最新题库</li>
+                    </ol>
+                </div>
+                <button class="close-notice" id="closeNotice">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="search-tabs">
+                <button class="tab-button active" data-tab="id-tab">ID查询</button>
+                <button class="tab-button" data-tab="question-tab">题目查询</button>
+                <button class="tab-button" data-tab="option-tab">选项查询</button>
+                <button class="tab-button" data-tab="camera-tab">拍照查询</button>
+            </div>
+
+            <!-- 修改后的ID查询表单 -->
+            <div class="tab-content active" id="id-tab">
+                <form class="search-form">
+                    <input type="text" placeholder="输入题目ID" id="idInput">
+                    <div class="query-buttons">
+                        <button type="button" class="local-query">本地INI查询</button>
+                        <button type="button" class="online-query">在线查询</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 修改后的题目查询和选项查询表单 -->
+            <div class="tab-content" id="question-tab">
+                <form class="search-form">
+                    <input type="text" placeholder="输入题目关键词">
+                    <button type="submit">查询</button>
+                </form>
+            </div>
+
+            <div class="tab-content" id="option-tab">
+                <form class="search-form">
+                    <input type="text" placeholder="输入选项内容">
+                    <button type="submit">查询</button>
+                </form>
+            </div>
+
+            <!-- 添加拍照识别页面 -->
+            <div class="tab-content" id="camera-tab">
+                <div class="camera-container">
+                    <video id="cameraPreview" playsinline autoplay></video>
+                    <canvas id="photoCanvas" style="display:none;"></canvas>
+                    <div class="camera-controls">
+                        <button id="toggleCamera">切换摄像头</button>
+                        <button id="takePhoto">拍照</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统一结果展示 -->
+            <div class="tab-content result-content" id="result-tab">
+                <h3 class="result-title">查询结果</h3>
+                <div class="result-grid">
+                    <div class="result-item">
+                        <label>类型:</label>
+                        <span class="highlight" id="result-type">-</span>
+                    </div>
+                    <div class="result-item">
+                        <label>难度:</label>
+                        <span class="highlight" id="result-difficulty">-</span>
+                    </div>
+                    <div class="result-item">
+                        <label>ID:</label>
+                        <span class="highlight" id="result-id">-</span>
+                    </div>
+                    <div class="result-item full-width">
+                        <label>题目:</label>
+                        <div class="result-value highlight" id="result-question">-</div>
+                    </div>
+                    <div class="result-item">
+                        <label>答案:</label>
+                        <span class="highlight answer" id="result-answer">-</span>
+                    </div>
+                    <div class="result-item full-width">
+                        <label>选项:</label>
+                        <div class="result-value highlight" id="result-options">-</div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+        <!-- 在查询记录部分添加清除按钮 -->
+        <div class="query-history">
+            <div class="history-header">
+                <h3>查询记录</h3>
+                <button class="clear-history" id="clearHistory">清除记录</button>
+            </div>
+            <ul id="historyList"></ul>
+        </div>
+    </main>
+
+    <script src="js/script.js"></script>
+</body>
+
+</html>
