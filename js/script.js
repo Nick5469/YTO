@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function () {
         showAlert('正在获取账号授权...', 'info');
 
         try {
-            const response = await fetch('https://yto.nickhome.eu.org/resource/cookie');
+            const response = await fetch('./resource/cookie');
             if (!response.ok) throw new Error('网络响应失败');
             
             cookie = await response.text();
