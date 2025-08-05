@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const idInput = document.getElementById('idInput');
     const localQueryButton = document.querySelector('.local-query');
     const onlineQueryButton = document.querySelector('.online-query');
-
+    const getAuthButton = document.getElementById('getAuthButton');
 
     // 初始检查模式状态
     document.getElementById('importButton').style.display = modeToggle.checked ? 'none' : 'block';
@@ -197,6 +197,7 @@ document.addEventListener('DOMContentLoaded', function () {
         authType: 'cloud',
         questionSource: 'global'
     };
+    let cookie = null;
 
     // 初始化页面
     initTabs();
@@ -283,6 +284,27 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // 获取COOKIE
+    async function fetchCookie (params) {
+        showAlert('正在获取账号授权...', 'info');
+
+        try {
+            const response = await fetch('https://yto.nickhome.eu.org/resource/cookie');
+            if (!response.ok) throw new Error('网络响应失败');
+            
+            cookie = await response.text();
+            showAlert('已获取授权', 'info');
+            
+            
+        }
+        catch (error) {
+            console.error('获取COOKIE失败 ',error);
+            showAlert(`获取授权失败: ${error.message}`, 'error');
+
+        }
+        
+    }
+
     // 获取INI数据
     async function fetchINIData() {
         showAlert('正在从服务器获取题库数据...', 'info');
@@ -297,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const text = await response.text();
             iniData = parseINI(text);
             updateParseStatus(true);
-            queryTool = Object.create(TextProcessor).init(text);
+            //queryTool = Object.create(TextProcessor).init(text);
             showAlert('题库数据已成功加载并解析', 'info');
 
             // 如果ID输入框有内容，自动查询
@@ -352,6 +374,16 @@ document.addEventListener('DOMContentLoaded', function () {
                         else if (value === 'hengineer') value = '高级技师';
                     }
 
+                    // 转换answer
+                    if (key === 'answer') {
+                        if (value === 't') value = '正确'
+                        else if (value === 'f') value = '错误'
+                    }
+
+                    //option
+                    if (key === 'option' & value === '') {
+                        value = 'T.正确\nF.错误'
+                    }
                     result[currentSection][key] = value;
                 }
             }
@@ -447,8 +479,13 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log(matchedIds);
 
         if (matchedIds.length === 0) {
-            showAlert('未找到匹配的题目', 'warning');
-            clearResult();
+            if (iniData[question]) {
+                queryById(question, true);
+            }
+            else {
+                showAlert('未找到匹配的题目', 'warning');
+                clearResult();
+            }
             return;
         }
 
@@ -690,15 +727,32 @@ document.addEventListener('DOMContentLoaded', function () {
         queryById(idInput.value.trim(), true);
     });
 
-    onlineQueryButton.addEventListener('click', function () {
-        // 移除在线模式检查
-        if (!iniData) {
-            showAlert('题库数据未加载，请先刷新数据', 'warning');
-            // fetchINIData().then(() => {
-            //     queryById(idInput.value.trim(), false);
-            // });
-        } else {
-            queryById(idInput.value.trim(), false);
+    onlineQueryButton.addEventListener('click', async function () {
+
+        if (!cookie) {
+            showAlert('未获取账号授权', 'warning');
+            return;
+        }
+        console.log(cookie);
+        document.cookie = cookie;
+        try {
+            const response = await fetch('http://ytosclb.com/index.php?m=home&c=break&a=checkanswer',{
+                method: 'POST',
+                headers: {
+                'Cookie': cookie
+            },
+                body: 'exam_id=217037&answer=f',
+                credentials: 'include'
+
+            });
+
+            if (!response.ok) throw new Error('失败');
+
+            console.log(response.json());
+            
+        }
+        catch (error){
+            showAlert(`失败: ${error.message}`,'error');
         }
     })
 
@@ -746,7 +800,10 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('importButton').style.display = isLocalMode ? 'block' : 'none';
     });
 
-
+    //获取授权
+    getAuthButton.addEventListener('click',function () {
+        fetchCookie();
+    })
 
 
 
