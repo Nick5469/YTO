@@ -516,7 +516,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
-    // 显示单个结果
+    // 显示单个结果 .replace(/;/g, '\n')  - ${result.type}
+    //${isOptionSearch ? '选项: ' + result.option.substring(0, 50) : result.question.substring(0, 50)}
+    //            ${(isOptionSearch ? result.option.length : result.question.length) > 50 ? '...' : ''}
     function displaySingleResult(result) {
         document.getElementById('result-type').textContent = result.type || '未知类型';
         document.getElementById('result-difficulty').textContent = result.level || '未知难度';
@@ -546,10 +548,9 @@ document.addEventListener('DOMContentLoaded', function () {
         results.forEach(result => {
             const li = document.createElement('li');
             li.innerHTML = `
-            <div><strong>ID: ${result.id}</strong> - ${result.type}</div>
+            <div><strong> ${result.question}</strong></div>
             <div class="question-preview">
-                ${isOptionSearch ? '选项: ' + result.option.substring(0, 50) : result.question.substring(0, 50)}
-                ${(isOptionSearch ? result.option.length : result.question.length) > 50 ? '...' : ''}
+                ${ result.option.substring(0, 50).replace(/;/g, '  \n')}
             </div>
         `;
 
