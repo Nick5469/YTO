@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题库数据解析系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.6/dist/css/layui.min.css">
+    <style>
+        body {
+            background-color: #f2f2f2;
+            padding: 15px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .button-group {
+            margin: 15px 0;
+        }
+        .question-list {
+            margin-top: 20px;
+        }
+        .question-item {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+        }
+        .question-item:last-child {
+            border-bottom: none;
+        }
+        .question-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .question-options {
+            margin-left: 20px;
+        }
+        .question-answer {
+            color: #009688;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .question-meta {
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>题库数据解析系统 <small>v1.0</small></h1>
+    </div>
+    
+    <div class="content">
+        <div class="layui-form">
+            <div class="layui-form-item">
+                <label class="layui-form-label">题库数据</label>
+                <div class="layui-input-block">
+                    <textarea id="json-input" placeholder="请粘贴JSON格式的题库数据" class="layui-textarea" style="height: 200px;"></textarea>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button type="button" class="layui-btn" id="clear-btn">清空</button>
+                <button type="button" class="layui-btn layui-btn-primary" id="paste-btn">粘贴</button>
+                <button type="button" class="layui-btn layui-btn-normal" id="parse-btn">解析</button>
+            </div>
+        </div>
+        
+        <div class="question-list">
+            <table id="question-table" lay-filter="question-table"></table>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/layui@2.9.6/dist/layui.min.js"></script>
+    <script>
+        layui.use(['table', 'layer'], function(){
+            var table = layui.table;
+            var layer = layui.layer;
+            
+            
+            // 粘贴示例数据
+            document.getElementById('paste-btn').addEventListener('click', function(){
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    navigator.clipboard.readText().then(function(text) {
+                        document.getElementById('json-input').value = text;
+                        layer.msg('已从剪贴板粘贴数据');
+                    }).catch(function(err) {
+                        layer.msg('无法读取剪贴板内容，请确保已授予权限');
+                        console.error('读取剪贴板失败:', err);
+                    });
+                } else {
+                    layer.msg('您的浏览器不支持剪贴板API，请手动粘贴数据');
+                }
+            });
+            
+            // 清空数据
+            document.getElementById('clear-btn').addEventListener('click', function(){
+                document.getElementById('json-input').value = '';
+            });
+            
+            // 解析数据
+            document.getElementById('parse-btn').addEventListener('click', function(){
+                var jsonInput = document.getElementById('json-input').value;
+                
+                if(!jsonInput) {
+                    layer.msg('请输入JSON数据');
+                    return;
+                }
+                
+                try {
+                    var questions = JSON.parse(jsonInput);
+                    renderQuestionTable(questions);
+                } catch(e) {
+                    layer.msg('JSON格式错误，请检查数据格式');
+                    console.error(e);
+                }
+            });
+            
+            // 渲染题目表格
+            function renderQuestionTable(questions) {
+                // 处理数据
+                var tableData = questions.map(function(item) {
+                    // 解析答案
+                    var answer = '';
+                    try {
+                        if(item.answer) {
+                            answer = atob(item.answer);
+                        }
+                    } catch(e) {
+                        answer = item.answer || '';
+                    }
+                    
+                    // 获取选项
+                    var options = [];
+                    for(var i = 0; i < 8; i++) {
+                        var optionKey = 'answer_' + String.fromCharCode(97 + i); // a, b, c, ...
+                        if(item[optionKey] && item[optionKey].trim() !== '') {
+                            options.push(String.fromCharCode(65 + i) + ': ' + item[optionKey]);
+                        }
+                    }
+                    
+                    // 处理题目类型
+                    var typeText = '';
+                    switch(item.type) {
+                        case 'pd': typeText = '判断题'; break;
+                        case 'dx': typeText = '单选题'; break;
+                        case 'dxx': typeText = '多选题'; break;
+                        default: typeText = item.type || '未知';
+                    }
+                    
+                    // 处理难度
+                    var levelText = '';
+                    switch(item.level) {
+                        case 'easy': levelText = '简单'; break;
+                        case 'medium': levelText = '中等'; break;
+                        case 'hard': levelText = '困难'; break;
+                        default: levelText = item.level || '未知';
+                    }
+                    
+                    return {
+                        id: item.id,
+                        question: item.question,
+                        type: typeText,
+                        level: levelText,
+                        options: options.join('<br>'),
+                        answer: answer,
+                        raw: item
+                    };
+                });
+                
+                // 渲染表格
+                table.render({
+                    elem: '#question-table',
+                    data: tableData,
+                    page: true,
+                    limit: 10,
+                    limits: [10, 20, 50],
+                    cols: [[
+                        {field: 'id', title: 'ID', width: 80, sort: true},
+                        {field: 'question', title: '题目', width: 300},
+                        {field: 'type', title: '类型', width: 100},
+                        {field: 'level', title: '难度', width: 100},
+                        {field: 'options', title: '选项', width: 200},
+                        {field: 'answer', title: '答案', width: 100},
+                        {fixed: 'right', title: '操作', width: 150, align:'center', toolbar: '#tableBar'}
+                    ]],
+                    toolbar: '<div>题库题目列表 (共 '+ tableData.length +' 题)</div>'
+                });
+            }
+            
+            // 监听工具条事件
+            table.on('tool(question-table)', function(obj){
+                var data = obj.data;
+                if(obj.event === 'detail'){
+                    layer.open({
+                        type: 1,
+                        title: '题目详情 - ID: ' + data.id,
+                        area: ['80%', '80%'],
+                        content: '<div style="padding: 20px;">' +
+                                 '<p><strong>题目:</strong> ' + data.question + '</p>' +
+                                 '<p><strong>类型:</strong> ' + data.type + '</p>' +
+                                 '<p><strong>难度:</strong> ' + data.level + '</p>' +
+                                 '<p><strong>选项:</strong><br>' + data.options.replace(/<br>/g, '<br>') + '</p>' +
+                                 '<p><strong>答案:</strong> ' + data.answer + '</p>' +
+                                 '<p><strong>编号:</strong> ' + (data.raw.num || '') + '</p>' +
+                                 '<p><strong>作者:</strong> ' + (data.raw.auther || '') + '</p>' +
+                                 '<p><strong>描述:</strong> ' + (data.raw.description || '') + '</p>' +
+                                 '</div>'
+                    });
+                }
+            });
+        });
+    </script>
+    
+    <!-- 表格操作按钮模板 -->
+    <script type="text/html" id="tableBar">
+        <a class="layui-btn layui-btn-xs" lay-event="detail">查看详情</a>
+    </script>
+</body>
+</html>

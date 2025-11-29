@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题库数据解析系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.6/dist/css/layui.min.css">
+    <style>
+        body {
+            background-color: #f5f7fa;
+            padding: 20px;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1E9FFF 0%, #0166FF 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .input-section {
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #eaeaea;
+        }
+        .button-group {
+            margin-top: 15px;
+            text-align: center;
+        }
+        .question-list {
+            margin-top: 20px;
+        }
+        .question-item {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+        }
+        .question-item:last-child {
+            border-bottom: none;
+        }
+        .question-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: #333;
+        }
+        .question-options {
+            margin-left: 20px;
+            margin-top: 8px;
+        }
+        .question-answer {
+            color: #009688;
+            font-weight: bold;
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: #f2f8f7;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .question-meta {
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .type-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+        .type-pd {
+            background-color: #FFE7BA;
+            color: #FA8C16;
+        }
+        .type-dx {
+            background-color: #D4EEFC;
+            color: #1890FF;
+        }
+        .type-dxx {
+            background-color: #E3F6D4;
+            color: #52C41A;
+        }
+        .level-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .level-easy {
+            background-color: #F6FFED;
+            color: #52C41A;
+        }
+        .level-medium {
+            background-color: #FFF7E6;
+            color: #FA8C16;
+        }
+        .level-hard {
+            background-color: #FFF2F0;
+            color: #FF4D4F;
+        }
+        .stats {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border-left: 4px solid #1E9FFF;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>题库数据解析系统</h1>
+        </div>
+        
+        <div class="content">
+            <div class="input-section">
+                <div class="layui-form">
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">题库数据</label>
+                        <div class="layui-input-block">
+                            <textarea id="json-input" placeholder="请粘贴JSON格式的题库数据或使用粘贴按钮从剪贴板读取" class="layui-textarea" style="height: 200px;"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button type="button" class="layui-btn layui-btn-primary" id="paste-btn">
+                            <i class="layui-icon">&#xe642;</i> 粘贴
+                        </button>
+                        <button type="button" class="layui-btn" id="clear-btn">
+                            <i class="layui-icon">&#x1006;</i> 清空
+                        </button>
+                        <button type="button" class="layui-btn layui-btn-normal" id="parse-btn">
+                            <i class="layui-icon">&#xe615;</i> 解析
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="stats-container" class="stats" style="display: none;">
+                已解析 <span id="total-count" class="layui-badge">0</span> 道题目，
+                其中 <span id="pd-count" class="layui-badge layui-bg-orange">0</span> 道判断题，
+                <span id="dx-count" class="layui-badge layui-bg-blue">0</span> 道单选题，
+                <span id="dxx-count" class="layui-badge layui-bg-green">0</span> 道多选题
+            </div>
+            
+            <div class="question-list" id="question-list">
+                <!-- 题目列表将在这里动态生成 -->
+                <div class="empty-state">
+                    <i class="layui-icon">&#xe63c;</i>
+                    <p>暂无数据，请粘贴并解析题库数据</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/layui@2.9.6/dist/layui.min.js"></script>
+    <script>
+        layui.use(['table', 'layer'], function(){
+            var table = layui.table;
+            var layer = layui.layer;
+            
+            // 清空数据
+            document.getElementById('clear-btn').addEventListener('click', function(){
+                document.getElementById('json-input').value = '';
+                document.getElementById('question-list').innerHTML = '<div class="empty-state"><i class="layui-icon">&#xe63c;</i><p>暂无数据，请粘贴并解析题库数据</p></div>';
+                document.getElementById('stats-container').style.display = 'none';
+            });
+            
+            // 从剪贴板粘贴数据
+            document.getElementById('paste-btn').addEventListener('click', function(){
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    navigator.clipboard.readText().then(function(text) {
+                        document.getElementById('json-input').value = text;
+                        layer.msg('已从剪贴板粘贴数据');
+                    }).catch(function(err) {
+                        layer.msg('无法读取剪贴板内容，请确保已授予权限');
+                        console.error('读取剪贴板失败:', err);
+                    });
+                } else {
+                    layer.msg('您的浏览器不支持剪贴板API，请手动粘贴数据');
+                }
+            });
+            
+            // 解析数据
+            document.getElementById('parse-btn').addEventListener('click', function(){
+                var jsonInput = document.getElementById('json-input').value;
+                
+                if(!jsonInput) {
+                    layer.msg('请输入JSON数据');
+                    return;
+                }
+                
+                try {
+                    var questions = JSON.parse(jsonInput);
+                    renderQuestionList(questions);
+                } catch(e) {
+                    layer.msg('JSON格式错误，请检查数据格式');
+                    console.error(e);
+                }
+            });
+            
+            // 渲染题目列表
+            function renderQuestionList(questions) {
+                var questionList = document.getElementById('question-list');
+                var statsContainer = document.getElementById('stats-container');
+                
+                if (!questions || questions.length === 0) {
+                    questionList.innerHTML = '<div class="empty-state"><i class="layui-icon">&#xe63c;</i><p>解析成功，但未找到题目数据</p></div>';
+                    statsContainer.style.display = 'none';
+                    return;
+                }
+                
+                // 统计信息
+                var totalCount = questions.length;
+                var pdCount = 0, dxCount = 0, dxxCount = 0;
+                
+                // 生成题目列表HTML
+                var html = '';
+                questions.forEach(function(item, index) {
+                    // 统计题目类型
+                    if (item.type === 'pd') pdCount++;
+                    else if (item.type === 'dx') dxCount++;
+                    else if (item.type === 'dxx') dxxCount++;
+                    
+                    // 解析答案
+                    var answer = '';
+                    try {
+                        if(item.answer) {
+                            answer = atob(item.answer);
+                        }
+                    } catch(e) {
+                        answer = item.answer || '';
+                    }
+                    
+                    // 获取选项
+                    var options = [];
+                    for(var i = 0; i < 8; i++) {
+                        var optionKey = 'answer_' + String.fromCharCode(97 + i); // a, b, c, ...
+                        if(item[optionKey] && item[optionKey].trim() !== '') {
+                            options.push('<div>' + String.fromCharCode(65 + i) + '. ' + item[optionKey] + '</div>');
+                        }
+                    }
+                    
+                    // 处理题目类型显示
+                    var typeText = '';
+                    var typeClass = '';
+                    switch(item.type) {
+                        case 'pd': 
+                            typeText = '判断题'; 
+                            typeClass = 'type-pd';
+                            break;
+                        case 'dx': 
+                            typeText = '单选题'; 
+                            typeClass = 'type-dx';
+                            break;
+                        case 'dxx': 
+                            typeText = '多选题'; 
+                            typeClass = 'type-dxx';
+                            break;
+                        default: 
+                            typeText = item.type || '未知';
+                            typeClass = '';
+                    }
+                    
+                    // 处理难度显示
+                    var levelText = '';
+                    var levelClass = '';
+                    switch(item.level) {
+                        case 'easy': 
+                            levelText = '简单'; 
+                            levelClass = 'level-easy';
+                            break;
+                        case 'medium': 
+                            levelText = '中等'; 
+                            levelClass = 'level-medium';
+                            break;
+                        case 'hard': 
+                            levelText = '困难'; 
+                            levelClass = 'level-hard';
+                            break;
+                        default: 
+                            levelText = item.level || '未知';
+                            levelClass = '';
+                    }
+                    
+                    html += '<div class="question-item">';
+                    html += '<div class="question-title">' + (index + 1) + '. ' + item.question + '</div>';
+                    html += '<div class="question-meta">';
+                    html += '<span class="type-badge ' + typeClass + '">' + typeText + '</span>';
+                    html += '<span class="level-badge ' + levelClass + '">' + levelText + '</span>';
+                    html += '<span style="margin-left: 10px;">ID: ' + item.id + '</span>';
+                    html += '</div>';
+                    
+                    if (options.length > 0) {
+                        html += '<div class="question-options">' + options.join('') + '</div>';
+                    }
+                    
+                    html += '<div class="question-answer">答案: ' + answer + '</div>';
+                    html += '</div>';
+                });
+                
+                questionList.innerHTML = html;
+                
+                // 更新统计信息
+                document.getElementById('total-count').textContent = totalCount;
+                document.getElementById('pd-count').textContent = pdCount;
+                document.getElementById('dx-count').textContent = dxCount;
+                document.getElementById('dxx-count').textContent = dxxCount;
+                statsContainer.style.display = 'block';
+                
+                layer.msg('成功解析 ' + totalCount + ' 道题目');
+            }
+        });
+    </script>
+</body>
+</html>
